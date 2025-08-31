@@ -2,19 +2,25 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>M3U 播放测试</title>
+  <title>M3U 文件测试</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
     video { width: 100%; max-width: 800px; margin-top: 20px; border: 2px solid #333; border-radius: 10px; }
+    .channel-list { margin-top: 20px; }
+    .channel-item { margin: 5px 0; padding: 8px; background: #e0e0e0; border-radius: 5px; cursor: pointer; }
+    .channel-item:hover { background: #b0b0b0; }
   </style>
 </head>
 <body>
   <h2>📺 M3U 文件测试</h2>
-  <p>上传一个 <code>.m3u</code> 文件，自动播放第一个频道。</p>
+  <p>上传一个 <code>.m3u</code> 文件，点击下列频道播放。</p>
   <input type="file" id="fileInput">
   <br><br>
+
   <video id="video" controls autoplay></video>
+
+  <div class="channel-list" id="channelList"></div>
 
   <script>
     document.getElementById('fileInput').addEventListener('change', function (event) {
@@ -22,24 +28,54 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const lines = e.target.result.split('\n');
-        const url = lines.find(line => line.startsWith("http"));
-        if (url) {
-          const video = document.getElementById('video');
-          if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(url.trim());
-            hls.attachMedia(video);
-          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url.trim();
-          } else {
-            alert("浏览器不支持 HLS 播放");
+        let channels = [];
+        let currentChannel = null;
+
+        // 解析 M3U 文件
+        lines.forEach(line => {
+          if (line.startsWith('#EXTINF:')) {
+            const channelInfo = line.split(',');
+            currentChannel = {
+              name: channelInfo[1].trim(),
+              url: ''
+            };
+          } else if (currentChannel && line.startsWith('http')) {
+            currentChannel.url = line.trim();
+            channels.push(currentChannel);
+            currentChannel = null;
           }
-        } else {
-          alert("未找到有效的 http 链接！");
-        }
+        });
+
+        // 显示频道列表
+        const channelList = document.getElementById('channelList');
+        channelList.innerHTML = '';  // 清空之前的频道列表
+        channels.forEach(channel => {
+          const channelElement = document.createElement('div');
+          channelElement.classList.add('channel-item');
+          channelElement.textContent = channel.name;
+          channelElement.onclick = function () {
+            playChannel(channel.url);
+          };
+          channelList.appendChild(channelElement);
+        });
       };
       reader.readAsText(file);
     });
+
+    function playChannel(url) {
+      const video = document.getElementById('video');
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+      } else {
+        alert("浏览器不支持 HLS 播放");
+      }
+    }
   </script>
 </body>
 </html>
+
+  
