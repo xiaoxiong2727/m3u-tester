@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>M3U 播放测试</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+    video { width: 100%; max-width: 800px; margin-top: 20px; border: 2px solid #333; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h2>📺 M3U 文件测试</h2>
+  <p>上传一个 <code>.m3u</code> 文件，自动播放第一个频道。</p>
+  <input type="file" id="fileInput">
+  <br><br>
+  <video id="video" controls autoplay></video>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split('\n');
+        const url = lines.find(line => line.startsWith("http"));
+        if (url) {
+          const video = document.getElementById('video');
+          if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url.trim());
+            hls.attachMedia(video);
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url.trim();
+          } else {
+            alert("浏览器不支持 HLS 播放");
+          }
+        } else {
+          alert("未找到有效的 http 链接！");
+        }
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
